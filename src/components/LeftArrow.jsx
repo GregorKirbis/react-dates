@@ -1,22 +1,15 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
-const LeftArrow = ({ size = 24, color = 'black', ...props }) => (
+const LeftArrow = ({ ...props }) => (
   <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill={color}
+    focusable="false" viewBox="0 0 1000 1000"
     xmlns="http://www.w3.org/2000/svg"
     {...props}
   >
-    <path d="M12 2L2 12l10 10 1.41-1.41L5.83 12l7.58-7.59L12 2z" />
-  </svg>
+    <path d="M336 275L126 485h806c13 0 23 10 23 23s-10 23-23 23H126l210 210c11 11 11 21 0 32-5 5-10 7-16 7s-11-2-16-7L55 524c-11-11-11-21 0-32l249-249c21-22 53 10 32 32z"/>
+    </svg>
+
 );
 
-LeftArrow.propTypes = {
-  size: PropTypes.number,
-  color: PropTypes.string,
-};
 
 export default LeftArrow;
