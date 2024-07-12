@@ -92,26 +92,27 @@ var DateInput = /*#__PURE__*/function (_ref2, _ref) {
   _proto[_ref] = function (nextProps, nextState) {
     return !shallowEqual(this.props, nextProps) || !shallowEqual(this.state, nextState);
   };
+  DateInput.getDerivedStateFromProps = function getDerivedStateFromProps(nextProps, prevState) {
+    if (prevState.dateString && nextProps.displayValue) {
+      return {
+        dateString: ''
+      };
+    }
+    return null;
+  };
   _proto.componentDidMount = function componentDidMount() {
     this.setState({
       isTouchDevice: isTouchDevice()
     });
   };
-  _proto.componentWillReceiveProps = function componentWillReceiveProps(nextProps) {
-    var dateString = this.state.dateString;
-    if (dateString && nextProps.displayValue) {
-      this.setState({
-        dateString: ''
-      });
-    }
-  };
   _proto.componentDidUpdate = function componentDidUpdate(prevProps) {
     var _this$props = this.props,
       focused = _this$props.focused,
       isFocused = _this$props.isFocused;
-    if (prevProps.focused === focused && prevProps.isFocused === isFocused) return;
-    if (focused && isFocused) {
-      this.inputRef.focus();
+    if (prevProps.focused !== focused || prevProps.isFocused !== isFocused) {
+      if (focused && isFocused) {
+        this.inputRef.focus();
+      }
     }
   };
   _proto.onChange = function onChange(e) {

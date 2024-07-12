@@ -39,7 +39,6 @@ var YEAR_SELECTION_TRANSITION = 'year_selection';
 var PREV_NAV = 'prev_nav';
 var NEXT_NAV = 'next_nav';
 var propTypes = process.env.NODE_ENV !== "production" ? forbidExtraProps(_objectSpread(_objectSpread({}, withStylesPropTypes), {}, {
-  // calendar presentation props
   enableOutsideDays: PropTypes.bool,
   numberOfMonths: PropTypes.number,
   orientation: ScrollableOrientationShape,
@@ -60,7 +59,6 @@ var propTypes = process.env.NODE_ENV !== "production" ? forbidExtraProps(_object
   horizontalMonthPadding: nonNegativeInteger,
   renderKeyboardShortcutsButton: PropTypes.func,
   renderKeyboardShortcutsPanel: PropTypes.func,
-  // navigation props
   dayPickerNavigationInlineStyles: PropTypes.object,
   disablePrev: PropTypes.bool,
   disableNext: PropTypes.bool,
@@ -77,36 +75,28 @@ var propTypes = process.env.NODE_ENV !== "production" ? forbidExtraProps(_object
   onMonthChange: PropTypes.func,
   onYearChange: PropTypes.func,
   onGetNextScrollableMonths: PropTypes.func,
-  // VERTICAL_SCROLLABLE daypickers only
   onGetPrevScrollableMonths: PropTypes.func,
-  // VERTICAL_SCROLLABLE daypickers only
-
-  // month props
   renderMonthText: mutuallyExclusiveProps(PropTypes.func, 'renderMonthText', 'renderMonthElement'),
   renderMonthElement: mutuallyExclusiveProps(PropTypes.func, 'renderMonthText', 'renderMonthElement'),
   renderWeekHeaderElement: PropTypes.func,
-  // day props
   modifiers: PropTypes.objectOf(PropTypes.objectOf(ModifiersShape)),
   renderCalendarDay: PropTypes.func,
   renderDayContents: PropTypes.func,
   onDayClick: PropTypes.func,
   onDayMouseEnter: PropTypes.func,
   onDayMouseLeave: PropTypes.func,
-  // accessibility props
   isFocused: PropTypes.bool,
   getFirstFocusableDay: PropTypes.func,
   onBlur: PropTypes.func,
   showKeyboardShortcuts: PropTypes.bool,
   onTab: PropTypes.func,
   onShiftTab: PropTypes.func,
-  // internationalization
   monthFormat: PropTypes.string,
   weekDayFormat: PropTypes.string,
   phrases: PropTypes.shape(getPhrasePropTypes(DayPickerPhrases)),
   dayAriaLabelFormat: PropTypes.string
 })) : {};
 export var defaultProps = {
-  // calendar presentation props
   enableOutsideDays: false,
   numberOfMonths: 2,
   orientation: HORIZONTAL_ORIENTATION,
@@ -129,7 +119,6 @@ export var defaultProps = {
   horizontalMonthPadding: 13,
   renderKeyboardShortcutsButton: undefined,
   renderKeyboardShortcutsPanel: undefined,
-  // navigation props
   dayPickerNavigationInlineStyles: null,
   disablePrev: false,
   disableNext: false,
@@ -147,25 +136,21 @@ export var defaultProps = {
   onYearChange: function onYearChange() {},
   onGetNextScrollableMonths: function onGetNextScrollableMonths() {},
   onGetPrevScrollableMonths: function onGetPrevScrollableMonths() {},
-  // month props
   renderMonthText: null,
   renderMonthElement: null,
   renderWeekHeaderElement: null,
-  // day props
   modifiers: {},
   renderCalendarDay: undefined,
   renderDayContents: null,
   onDayClick: function onDayClick() {},
   onDayMouseEnter: function onDayMouseEnter() {},
   onDayMouseLeave: function onDayMouseLeave() {},
-  // accessibility props
   isFocused: false,
   getFirstFocusableDay: null,
   onBlur: function onBlur() {},
   showKeyboardShortcuts: false,
   onTab: function onTab() {},
   onShiftTab: function onShiftTab() {},
-  // internationalization
   monthFormat: 'MMMM YYYY',
   weekDayFormat: 'dd',
   phrases: DayPickerPhrases,
@@ -230,6 +215,55 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
   _proto[_ref] = function (nextProps, nextState) {
     return !shallowEqual(this.props, nextProps) || !shallowEqual(this.state, nextState);
   };
+  DayPicker.getDerivedStateFromProps = function getDerivedStateFromProps(nextProps, prevState) {
+    var hidden = nextProps.hidden,
+      isFocused = nextProps.isFocused,
+      showKeyboardShortcuts = nextProps.showKeyboardShortcuts,
+      onBlur = nextProps.onBlur,
+      orientation = nextProps.orientation,
+      renderMonthText = nextProps.renderMonthText,
+      horizontalMonthPadding = nextProps.horizontalMonthPadding,
+      initialVisibleMonth = nextProps.initialVisibleMonth,
+      daySize = nextProps.daySize;
+    var newState = {};
+    if (!hidden) {
+      if (!prevState.hasSetInitialVisibleMonth) {
+        newState.currentMonth = initialVisibleMonth();
+        newState.hasSetInitialVisibleMonth = true;
+      } else {
+        var numberOfMonths = nextProps.numberOfMonths;
+        var newDate = initialVisibleMonth();
+        if (!isDayVisible(newDate, prevState.currentMonth, numberOfMonths)) {
+          newState.currentMonth = newDate;
+        }
+      }
+    }
+    if (daySize !== nextProps.daySize) {
+      newState.calendarMonthWidth = getCalendarMonthWidth(nextProps.daySize, horizontalMonthPadding);
+    }
+    if (isFocused !== prevState.isFocused) {
+      if (isFocused) {
+        var focusedDate = this.getFocusedDay(prevState.currentMonth);
+        var onKeyboardShortcutsPanelClose = prevState.onKeyboardShortcutsPanelClose;
+        if (showKeyboardShortcuts) {
+          onKeyboardShortcutsPanelClose = onBlur;
+        }
+        newState.showKeyboardShortcuts = showKeyboardShortcuts;
+        newState.onKeyboardShortcutsPanelClose = onKeyboardShortcutsPanelClose;
+        newState.focusedDate = focusedDate;
+        newState.withMouseInteractions = false;
+      } else {
+        newState.focusedDate = null;
+      }
+    }
+    if (renderMonthText !== null && nextProps.renderMonthText !== null && renderMonthText(prevState.currentMonth) !== nextProps.renderMonthText(prevState.currentMonth)) {
+      newState.monthTitleHeight = null;
+    }
+    if (orientation === VERTICAL_SCROLLABLE && this.transitionContainer && !isSameMonth(prevState.currentMonth, nextState.currentMonth)) {
+      newState.currentMonthScrollTop = this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop;
+    }
+    return newState;
+  };
   _proto.componentDidMount = function componentDidMount() {
     var orientation = this.props.orientation;
     var currentMonth = this.state.currentMonth;
@@ -242,51 +276,49 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     });
     this.setCalendarMonthWeeks(currentMonth);
   };
-  _proto.componentWillReceiveProps = function componentWillReceiveProps(nextProps, nextState) {
-    var hidden = nextProps.hidden,
-      isFocused = nextProps.isFocused,
-      showKeyboardShortcuts = nextProps.showKeyboardShortcuts,
-      onBlur = nextProps.onBlur,
-      orientation = nextProps.orientation,
-      renderMonthText = nextProps.renderMonthText,
-      horizontalMonthPadding = nextProps.horizontalMonthPadding;
-    var currentMonth = this.state.currentMonth;
-    var nextCurrentMonth = nextState.currentMonth;
+  _proto.componentDidUpdate = function componentDidUpdate(prevProps, prevState) {
+    var _this$props = this.props,
+      orientation = _this$props.orientation,
+      daySize = _this$props.daySize,
+      isFocused = _this$props.isFocused,
+      numberOfMonths = _this$props.numberOfMonths,
+      hidden = _this$props.hidden,
+      renderMonthText = _this$props.renderMonthText,
+      horizontalMonthPadding = _this$props.horizontalMonthPadding;
+    var _this$state = this.state,
+      currentMonth = _this$state.currentMonth,
+      currentMonthScrollTop = _this$state.currentMonthScrollTop,
+      focusedDate = _this$state.focusedDate,
+      monthTitleHeight = _this$state.monthTitleHeight;
     if (!hidden) {
-      if (!this.hasSetInitialVisibleMonth) {
-        this.hasSetInitialVisibleMonth = true;
+      if (!prevState.hasSetInitialVisibleMonth) {
         this.setState({
-          currentMonth: nextProps.initialVisibleMonth()
+          currentMonth: this.props.initialVisibleMonth(),
+          hasSetInitialVisibleMonth: true
         });
       } else {
-        var numberOfMonths = this.props.numberOfMonths;
-        var newDate = nextProps.initialVisibleMonth();
+        var newDate = this.props.initialVisibleMonth();
         if (!isDayVisible(newDate, currentMonth, numberOfMonths)) {
           this.onMonthChange(newDate);
         }
       }
     }
-    var _this$props = this.props,
-      daySize = _this$props.daySize,
-      prevIsFocused = _this$props.isFocused,
-      prevRenderMonthText = _this$props.renderMonthText;
-    if (nextProps.daySize !== daySize) {
+    if (this.props.daySize !== prevProps.daySize) {
       this.setState({
-        calendarMonthWidth: getCalendarMonthWidth(nextProps.daySize, horizontalMonthPadding)
+        calendarMonthWidth: getCalendarMonthWidth(this.props.daySize, horizontalMonthPadding)
       });
     }
-    if (isFocused !== prevIsFocused) {
+    if (isFocused !== prevProps.isFocused) {
       if (isFocused) {
-        var focusedDate = this.getFocusedDay(currentMonth);
+        var _focusedDate = this.getFocusedDay(currentMonth);
         var onKeyboardShortcutsPanelClose = this.state.onKeyboardShortcutsPanelClose;
-        if (nextProps.showKeyboardShortcuts) {
-          // the ? shortcut came from the input and we should return input there once it is close
-          onKeyboardShortcutsPanelClose = onBlur;
+        if (this.props.showKeyboardShortcuts) {
+          onKeyboardShortcutsPanelClose = this.props.onBlur;
         }
         this.setState({
-          showKeyboardShortcuts: showKeyboardShortcuts,
+          showKeyboardShortcuts: this.props.showKeyboardShortcuts,
           onKeyboardShortcutsPanelClose: onKeyboardShortcutsPanelClose,
-          focusedDate: focusedDate,
+          focusedDate: _focusedDate,
           withMouseInteractions: false
         });
       } else {
@@ -295,51 +327,11 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
         });
       }
     }
-    if (renderMonthText !== null && prevRenderMonthText !== null && renderMonthText(currentMonth) !== prevRenderMonthText(currentMonth)) {
+    if (renderMonthText !== null && prevProps.renderMonthText !== null && renderMonthText(currentMonth) !== prevProps.renderMonthText(currentMonth)) {
       this.setState({
         monthTitleHeight: null
       });
     }
-
-    // Capture the scroll position so when previous months are rendered above the current month
-    // we can adjust scroll after the component has updated and the previous current month
-    // stays in view.
-    if (orientation === VERTICAL_SCROLLABLE && this.transitionContainer && !isSameMonth(currentMonth, nextCurrentMonth)) {
-      this.setState({
-        currentMonthScrollTop: this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop
-      });
-    }
-  };
-  _proto.componentWillUpdate = function componentWillUpdate() {
-    var _this2 = this;
-    var transitionDuration = this.props.transitionDuration;
-
-    // Calculating the dimensions trigger a DOM repaint which
-    // breaks the CSS transition.
-    // The setTimeout will wait until the transition ends.
-    if (this.calendarInfo) {
-      this.setCalendarInfoWidthTimeout = setTimeout(function () {
-        var calendarInfoWidth = _this2.state.calendarInfoWidth;
-        var calendarInfoPanelWidth = calculateDimension(_this2.calendarInfo, 'width', true, true);
-        if (calendarInfoWidth !== calendarInfoPanelWidth) {
-          _this2.setState({
-            calendarInfoWidth: calendarInfoPanelWidth
-          });
-        }
-      }, transitionDuration);
-    }
-  };
-  _proto.componentDidUpdate = function componentDidUpdate(prevProps, prevState) {
-    var _this$props2 = this.props,
-      orientation = _this$props2.orientation,
-      daySize = _this$props2.daySize,
-      isFocused = _this$props2.isFocused,
-      numberOfMonths = _this$props2.numberOfMonths;
-    var _this$state = this.state,
-      currentMonth = _this$state.currentMonth,
-      currentMonthScrollTop = _this$state.currentMonthScrollTop,
-      focusedDate = _this$state.focusedDate,
-      monthTitleHeight = _this$state.monthTitleHeight;
     var shouldAdjustHeight = false;
     if (numberOfMonths !== prevProps.numberOfMonths) {
       this.setCalendarMonthWeeks(currentMonth);
@@ -378,11 +370,11 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     this.setState({
       withMouseInteractions: false
     });
-    var _this$props3 = this.props,
-      onBlur = _this$props3.onBlur,
-      onTab = _this$props3.onTab,
-      onShiftTab = _this$props3.onShiftTab,
-      isRTL = _this$props3.isRTL;
+    var _this$props2 = this.props,
+      onBlur = _this$props2.onBlur,
+      onTab = _this$props2.onTab,
+      onShiftTab = _this$props2.onShiftTab,
+      isRTL = _this$props2.isRTL;
     var _this$state2 = this.state,
       focusedDate = _this$state2.focusedDate,
       showKeyboardShortcuts = _this$state2.showKeyboardShortcuts;
@@ -482,10 +474,10 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     this.onPrevMonthTransition();
   };
   _proto.onPrevMonthTransition = function onPrevMonthTransition(nextFocusedDate) {
-    var _this$props4 = this.props,
-      daySize = _this$props4.daySize,
-      isRTL = _this$props4.isRTL,
-      numberOfMonths = _this$props4.numberOfMonths;
+    var _this$props3 = this.props,
+      daySize = _this$props3.daySize,
+      isRTL = _this$props3.isRTL,
+      numberOfMonths = _this$props3.numberOfMonths;
     var _this$state3 = this.state,
       calendarMonthWidth = _this$state3.calendarMonthWidth,
       monthTitleHeight = _this$state3.monthTitleHeight;
@@ -543,10 +535,10 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     this.onNextMonthTransition();
   };
   _proto.onNextMonthTransition = function onNextMonthTransition(nextFocusedDate) {
-    var _this$props5 = this.props,
-      isRTL = _this$props5.isRTL,
-      numberOfMonths = _this$props5.numberOfMonths,
-      daySize = _this$props5.daySize;
+    var _this$props4 = this.props,
+      isRTL = _this$props4.isRTL,
+      numberOfMonths = _this$props4.numberOfMonths,
+      daySize = _this$props4.daySize;
     var _this$state4 = this.state,
       calendarMonthWidth = _this$state4.calendarMonthWidth,
       monthTitleHeight = _this$state4.monthTitleHeight;
@@ -603,9 +595,9 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     return firstVisibleMonthIndex;
   };
   _proto.getFocusedDay = function getFocusedDay(newMonth) {
-    var _this$props6 = this.props,
-      getFirstFocusableDay = _this$props6.getFirstFocusableDay,
-      numberOfMonths = _this$props6.numberOfMonths;
+    var _this$props5 = this.props,
+      getFirstFocusableDay = _this$props5.getFirstFocusableDay,
+      numberOfMonths = _this$props5.numberOfMonths;
     var focusedDate;
     if (getFirstFocusableDay) {
       focusedDate = getFirstFocusableDay(newMonth);
@@ -616,11 +608,11 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     return focusedDate;
   };
   _proto.setMonthTitleHeight = function setMonthTitleHeight(monthTitleHeight) {
-    var _this3 = this;
+    var _this2 = this;
     this.setState({
       monthTitleHeight: monthTitleHeight
     }, function () {
-      _this3.calculateAndSetDayPickerHeight();
+      _this2.calculateAndSetDayPickerHeight();
     });
   };
   _proto.setCalendarMonthWeeks = function setCalendarMonthWeeks(currentMonth) {
@@ -655,9 +647,9 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     });
   };
   _proto.getPrevScrollableMonths = function getPrevScrollableMonths(e) {
-    var _this$props7 = this.props,
-      numberOfMonths = _this$props7.numberOfMonths,
-      onGetPrevScrollableMonths = _this$props7.onGetPrevScrollableMonths;
+    var _this$props6 = this.props,
+      numberOfMonths = _this$props6.numberOfMonths,
+      onGetPrevScrollableMonths = _this$props6.onGetPrevScrollableMonths;
     if (e) e.preventDefault();
     if (onGetPrevScrollableMonths) onGetPrevScrollableMonths(e);
     this.setState(function (_ref4) {
@@ -706,14 +698,14 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     return orientation === VERTICAL_ORIENTATION || orientation === VERTICAL_SCROLLABLE;
   };
   _proto.updateStateAfterMonthTransition = function updateStateAfterMonthTransition() {
-    var _this4 = this;
-    var _this$props8 = this.props,
-      onPrevMonthClick = _this$props8.onPrevMonthClick,
-      onNextMonthClick = _this$props8.onNextMonthClick,
-      numberOfMonths = _this$props8.numberOfMonths,
-      onMonthChange = _this$props8.onMonthChange,
-      onYearChange = _this$props8.onYearChange,
-      isRTL = _this$props8.isRTL;
+    var _this3 = this;
+    var _this$props7 = this.props,
+      onPrevMonthClick = _this$props7.onPrevMonthClick,
+      onNextMonthClick = _this$props7.onNextMonthClick,
+      numberOfMonths = _this$props7.numberOfMonths,
+      onMonthChange = _this$props7.onMonthChange,
+      onYearChange = _this$props7.onYearChange,
+      isRTL = _this$props7.isRTL;
     var _this$state7 = this.state,
       currentMonth = _this$state7.currentMonth,
       monthTransition = _this$state7.monthTransition,
@@ -758,20 +750,20 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
       // if the user is navigating around using a mouse
       if (withMouseInteractions) {
         var activeElement = getActiveElement();
-        if (activeElement && activeElement !== document.body && _this4.container.contains(activeElement) && activeElement.blur) {
+        if (activeElement && activeElement !== document.body && _this3.container.contains(activeElement) && activeElement.blur) {
           activeElement.blur();
         }
       }
     });
   };
   _proto.adjustDayPickerHeight = function adjustDayPickerHeight(newMonthHeight) {
-    var _this5 = this;
+    var _this4 = this;
     var monthHeight = newMonthHeight + MONTH_PADDING;
     if (monthHeight !== this.calendarMonthGridHeight) {
       this.transitionContainer.style.height = "".concat(monthHeight, "px");
       if (!this.calendarMonthGridHeight) {
         this.setCalendarMonthGridHeightTimeout = setTimeout(function () {
-          _this5.setState({
+          _this4.setState({
             hasSetHeight: true
           });
         }, 0);
@@ -780,9 +772,9 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     }
   };
   _proto.calculateAndSetDayPickerHeight = function calculateAndSetDayPickerHeight() {
-    var _this$props9 = this.props,
-      daySize = _this$props9.daySize,
-      numberOfMonths = _this$props9.numberOfMonths;
+    var _this$props8 = this.props,
+      daySize = _this$props8.daySize,
+      numberOfMonths = _this$props8.numberOfMonths;
     var monthTitleHeight = this.state.monthTitleHeight;
     var visibleCalendarWeeks = this.calendarMonthWeeks.slice(1, numberOfMonths + 1);
     var calendarMonthWeeksHeight = Math.max.apply(Math, [0].concat(_toConsumableArray(visibleCalendarWeeks))) * (daySize - 1);
@@ -808,21 +800,21 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     });
   };
   _proto.renderNavigation = function renderNavigation(navDirection) {
-    var _this$props10 = this.props,
-      dayPickerNavigationInlineStyles = _this$props10.dayPickerNavigationInlineStyles,
-      disablePrev = _this$props10.disablePrev,
-      disableNext = _this$props10.disableNext,
-      navPosition = _this$props10.navPosition,
-      navPrev = _this$props10.navPrev,
-      navNext = _this$props10.navNext,
-      noNavButtons = _this$props10.noNavButtons,
-      noNavNextButton = _this$props10.noNavNextButton,
-      noNavPrevButton = _this$props10.noNavPrevButton,
-      orientation = _this$props10.orientation,
-      phrases = _this$props10.phrases,
-      renderNavPrevButton = _this$props10.renderNavPrevButton,
-      renderNavNextButton = _this$props10.renderNavNextButton,
-      isRTL = _this$props10.isRTL;
+    var _this$props9 = this.props,
+      dayPickerNavigationInlineStyles = _this$props9.dayPickerNavigationInlineStyles,
+      disablePrev = _this$props9.disablePrev,
+      disableNext = _this$props9.disableNext,
+      navPosition = _this$props9.navPosition,
+      navPrev = _this$props9.navPrev,
+      navNext = _this$props9.navNext,
+      noNavButtons = _this$props9.noNavButtons,
+      noNavNextButton = _this$props9.noNavNextButton,
+      noNavPrevButton = _this$props9.noNavPrevButton,
+      orientation = _this$props9.orientation,
+      phrases = _this$props9.phrases,
+      renderNavPrevButton = _this$props9.renderNavPrevButton,
+      renderNavNextButton = _this$props9.renderNavNextButton,
+      isRTL = _this$props9.isRTL;
     if (noNavButtons) {
       return null;
     }
@@ -847,13 +839,13 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     });
   };
   _proto.renderWeekHeader = function renderWeekHeader(index) {
-    var _this$props11 = this.props,
-      daySize = _this$props11.daySize,
-      horizontalMonthPadding = _this$props11.horizontalMonthPadding,
-      orientation = _this$props11.orientation,
-      renderWeekHeaderElement = _this$props11.renderWeekHeaderElement,
-      css = _this$props11.css,
-      styles = _this$props11.styles;
+    var _this$props10 = this.props,
+      daySize = _this$props10.daySize,
+      horizontalMonthPadding = _this$props10.horizontalMonthPadding,
+      orientation = _this$props10.orientation,
+      renderWeekHeaderElement = _this$props10.renderWeekHeaderElement,
+      css = _this$props10.css,
+      styles = _this$props10.styles;
     var calendarMonthWidth = this.state.calendarMonthWidth;
     var verticalScrollable = orientation === VERTICAL_SCROLLABLE;
     var horizontalStyle = {
@@ -883,7 +875,7 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
     }), /*#__PURE__*/React.createElement("ul", css(styles.DayPicker_weekHeader_ul), header));
   };
   _proto.render = function render() {
-    var _this6 = this;
+    var _this5 = this;
     var _this$state8 = this.state,
       calendarMonthWidth = _this$state8.calendarMonthWidth,
       currentMonth = _this$state8.currentMonth,
@@ -896,41 +888,41 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
       hasSetHeight = _this$state8.hasSetHeight,
       calendarInfoWidth = _this$state8.calendarInfoWidth,
       monthTitleHeight = _this$state8.monthTitleHeight;
-    var _this$props12 = this.props,
-      enableOutsideDays = _this$props12.enableOutsideDays,
-      numberOfMonths = _this$props12.numberOfMonths,
-      orientation = _this$props12.orientation,
-      modifiers = _this$props12.modifiers,
-      withPortal = _this$props12.withPortal,
-      onDayClick = _this$props12.onDayClick,
-      onDayMouseEnter = _this$props12.onDayMouseEnter,
-      onDayMouseLeave = _this$props12.onDayMouseLeave,
-      firstDayOfWeek = _this$props12.firstDayOfWeek,
-      renderMonthText = _this$props12.renderMonthText,
-      renderCalendarDay = _this$props12.renderCalendarDay,
-      renderDayContents = _this$props12.renderDayContents,
-      renderCalendarInfo = _this$props12.renderCalendarInfo,
-      renderMonthElement = _this$props12.renderMonthElement,
-      renderKeyboardShortcutsButton = _this$props12.renderKeyboardShortcutsButton,
-      renderKeyboardShortcutsPanel = _this$props12.renderKeyboardShortcutsPanel,
-      calendarInfoPosition = _this$props12.calendarInfoPosition,
-      hideKeyboardShortcutsPanel = _this$props12.hideKeyboardShortcutsPanel,
-      onOutsideClick = _this$props12.onOutsideClick,
-      monthFormat = _this$props12.monthFormat,
-      daySize = _this$props12.daySize,
-      isFocused = _this$props12.isFocused,
-      isRTL = _this$props12.isRTL,
-      css = _this$props12.css,
-      styles = _this$props12.styles,
-      theme = _this$props12.theme,
-      phrases = _this$props12.phrases,
-      verticalHeight = _this$props12.verticalHeight,
-      dayAriaLabelFormat = _this$props12.dayAriaLabelFormat,
-      noBorder = _this$props12.noBorder,
-      transitionDuration = _this$props12.transitionDuration,
-      verticalBorderSpacing = _this$props12.verticalBorderSpacing,
-      horizontalMonthPadding = _this$props12.horizontalMonthPadding,
-      navPosition = _this$props12.navPosition;
+    var _this$props11 = this.props,
+      enableOutsideDays = _this$props11.enableOutsideDays,
+      numberOfMonths = _this$props11.numberOfMonths,
+      orientation = _this$props11.orientation,
+      modifiers = _this$props11.modifiers,
+      withPortal = _this$props11.withPortal,
+      onDayClick = _this$props11.onDayClick,
+      onDayMouseEnter = _this$props11.onDayMouseEnter,
+      onDayMouseLeave = _this$props11.onDayMouseLeave,
+      firstDayOfWeek = _this$props11.firstDayOfWeek,
+      renderMonthText = _this$props11.renderMonthText,
+      renderCalendarDay = _this$props11.renderCalendarDay,
+      renderDayContents = _this$props11.renderDayContents,
+      renderCalendarInfo = _this$props11.renderCalendarInfo,
+      renderMonthElement = _this$props11.renderMonthElement,
+      renderKeyboardShortcutsButton = _this$props11.renderKeyboardShortcutsButton,
+      renderKeyboardShortcutsPanel = _this$props11.renderKeyboardShortcutsPanel,
+      calendarInfoPosition = _this$props11.calendarInfoPosition,
+      hideKeyboardShortcutsPanel = _this$props11.hideKeyboardShortcutsPanel,
+      onOutsideClick = _this$props11.onOutsideClick,
+      monthFormat = _this$props11.monthFormat,
+      daySize = _this$props11.daySize,
+      isFocused = _this$props11.isFocused,
+      isRTL = _this$props11.isRTL,
+      css = _this$props11.css,
+      styles = _this$props11.styles,
+      theme = _this$props11.theme,
+      phrases = _this$props11.phrases,
+      verticalHeight = _this$props11.verticalHeight,
+      dayAriaLabelFormat = _this$props11.dayAriaLabelFormat,
+      noBorder = _this$props11.noBorder,
+      transitionDuration = _this$props11.transitionDuration,
+      verticalBorderSpacing = _this$props11.verticalBorderSpacing,
+      horizontalMonthPadding = _this$props11.horizontalMonthPadding,
+      navPosition = _this$props11.navPosition;
     var dayPickerHorizontalPadding = theme.reactDates.spacing.dayPickerHorizontalPadding;
     var isHorizontal = this.isHorizontal();
     var numOfWeekHeaders = this.isVertical() ? 1 : numberOfMonths;
@@ -992,7 +984,7 @@ var DayPicker = /*#__PURE__*/function (_ref2, _ref) {
       },
       onKeyDown: this.onKeyDown,
       onMouseUp: function onMouseUp() {
-        _this6.setState({
+        _this5.setState({
           withMouseInteractions: true
         });
       },

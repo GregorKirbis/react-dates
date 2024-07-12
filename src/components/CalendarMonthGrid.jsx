@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import momentPropTypes from 'react-moment-proptypes';
 import { forbidExtraProps, mutuallyExclusiveProps, nonNegativeInteger } from 'airbnb-prop-types';
@@ -114,7 +114,7 @@ function getMonths(initialMonth, numberOfMonths, withoutTransitionMonths) {
   return months;
 }
 
-class CalendarMonthGrid extends React.PureComponent {
+class CalendarMonthGrid extends Component {
   constructor(props) {
     super(props);
     const withoutTransitionMonths = props.orientation === VERTICAL_SCROLLABLE;
@@ -131,6 +131,36 @@ class CalendarMonthGrid extends React.PureComponent {
     this.onYearSelect = this.onYearSelect.bind(this);
   }
 
+  static getDerivedStateFromProps(nextProps, prevState) {
+    const { initialMonth, numberOfMonths, orientation } = nextProps;
+    const { months } = prevState;
+    const withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
+    let newMonths = months;
+
+    if (!initialMonth.isSame(prevState.initialMonth, 'month') || numberOfMonths !== prevState.numberOfMonths) {
+      if (isNextMonth(prevState.initialMonth, initialMonth)) {
+        newMonths = months.slice(1);
+        newMonths.push(months[months.length - 1].clone().add(1, 'month'));
+      } else if (isPrevMonth(prevState.initialMonth, initialMonth)) {
+        newMonths = months.slice(0, months.length - 1);
+        newMonths.unshift(months[0].clone().subtract(1, 'month'));
+      } else {
+        newMonths = getMonths(initialMonth, numberOfMonths, withoutTransitionMonths);
+      }
+    }
+
+    if (moment.locale() !== prevState.locale) {
+      newMonths = newMonths.map((m) => m.locale(moment.locale()));
+    }
+
+    return {
+      months: newMonths,
+      initialMonth,
+      numberOfMonths,
+      locale: moment.locale(),
+    };
+  }
+
   componentDidMount() {
     this.removeEventListener = addEventListener(
       this.container,
@@ -139,59 +169,9 @@ class CalendarMonthGrid extends React.PureComponent {
     );
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { initialMonth, numberOfMonths, orientation } = nextProps;
-    const { months } = this.state;
+  componentDidUpdate(prevProps) {
+    const { isAnimating, transitionDuration, onMonthTransitionEnd } = this.props;
 
-    const {
-      initialMonth: prevInitialMonth,
-      numberOfMonths: prevNumberOfMonths,
-    } = this.props;
-    const hasMonthChanged = !prevInitialMonth.isSame(initialMonth, 'month');
-    const hasNumberOfMonthsChanged = prevNumberOfMonths !== numberOfMonths;
-    let newMonths = months;
-
-    if (hasMonthChanged || hasNumberOfMonthsChanged) {
-      if (hasMonthChanged && !hasNumberOfMonthsChanged) {
-        if (isNextMonth(prevInitialMonth, initialMonth)) {
-          newMonths = months.slice(1);
-          newMonths.push(months[months.length - 1].clone().add(1, 'month'));
-        } else if (isPrevMonth(prevInitialMonth, initialMonth)) {
-          newMonths = months.slice(0, months.length - 1);
-          newMonths.unshift(months[0].clone().subtract(1, 'month'));
-        } else {
-          const withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
-          newMonths = getMonths(initialMonth, numberOfMonths, withoutTransitionMonths);
-        }
-      }
-
-      if (hasNumberOfMonthsChanged) {
-        const withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
-        newMonths = getMonths(initialMonth, numberOfMonths, withoutTransitionMonths);
-      }
-
-      const momentLocale = moment.locale();
-      if (this.locale !== momentLocale) {
-        this.locale = momentLocale;
-        newMonths = newMonths.map((m) => m.locale(this.locale));
-      }
-
-      this.setState({
-        months: newMonths,
-      });
-    }
-  }
-
-  componentDidUpdate() {
-    const {
-      isAnimating,
-      transitionDuration,
-      onMonthTransitionEnd,
-    } = this.props;
-
-    // For IE9, immediately call onMonthTransitionEnd instead of
-    // waiting for the animation to complete. Similarly, if transitionDuration
-    // is set to 0, also immediately invoke the onMonthTransitionEnd callback
     if ((!this.isTransitionEndSupported || !transitionDuration) && isAnimating) {
       onMonthTransitionEnd();
     }

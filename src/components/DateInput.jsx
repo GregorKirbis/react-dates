@@ -47,7 +47,6 @@ const propTypes = forbidExtraProps({
   onFocus: PropTypes.func,
   onKeyDownShiftTab: PropTypes.func,
   onKeyDownTab: PropTypes.func,
-
   onKeyDownArrowDown: PropTypes.func,
   onKeyDownQuestionMark: PropTypes.func,
 
@@ -77,7 +76,6 @@ const defaultProps = {
   onFocus() {},
   onKeyDownShiftTab() {},
   onKeyDownTab() {},
-
   onKeyDownArrowDown() {},
   onKeyDownQuestionMark() {},
 
@@ -100,25 +98,23 @@ class DateInput extends React.PureComponent {
     this.throttledKeyDown = throttle(this.onFinalKeyDown, 300, { trailing: false });
   }
 
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (prevState.dateString && nextProps.displayValue) {
+      return { dateString: '' };
+    }
+    return null;
+  }
+
   componentDidMount() {
     this.setState({ isTouchDevice: isTouchDevice() });
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { dateString } = this.state;
-    if (dateString && nextProps.displayValue) {
-      this.setState({
-        dateString: '',
-      });
-    }
-  }
-
   componentDidUpdate(prevProps) {
     const { focused, isFocused } = this.props;
-    if (prevProps.focused === focused && prevProps.isFocused === isFocused) return;
-
-    if (focused && isFocused) {
-      this.inputRef.focus();
+    if (prevProps.focused !== focused || prevProps.isFocused !== isFocused) {
+      if (focused && isFocused) {
+        this.inputRef.focus();
+      }
     }
   }
 

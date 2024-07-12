@@ -1,10 +1,9 @@
 import _extends from "@babel/runtime/helpers/esm/extends";
 import _inheritsLoose from "@babel/runtime/helpers/esm/inheritsLoose";
 import _defineProperty from "@babel/runtime/helpers/esm/defineProperty";
-import shallowEqual from "enzyme-shallow-equal";
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
-import React from 'react';
+import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import momentPropTypes from 'react-moment-proptypes';
 import { forbidExtraProps, mutuallyExclusiveProps, nonNegativeInteger } from 'airbnb-prop-types';
@@ -104,10 +103,10 @@ function getMonths(initialMonth, numberOfMonths, withoutTransitionMonths) {
   }
   return months;
 }
-var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
+var CalendarMonthGrid = /*#__PURE__*/function (_Component) {
   function CalendarMonthGrid(props) {
     var _this;
-    _this = _ref2.call(this, props) || this;
+    _this = _Component.call(this, props) || this;
     var withoutTransitionMonths = props.orientation === VERTICAL_SCROLLABLE;
     _this.state = {
       months: getMonths(props.initialMonth, props.numberOfMonths, withoutTransitionMonths)
@@ -120,64 +119,46 @@ var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
     _this.onYearSelect = _this.onYearSelect.bind(_this);
     return _this;
   }
-  _inheritsLoose(CalendarMonthGrid, _ref2);
-  var _proto = CalendarMonthGrid.prototype;
-  _proto[_ref] = function (nextProps, nextState) {
-    return !shallowEqual(this.props, nextProps) || !shallowEqual(this.state, nextState);
-  };
-  _proto.componentDidMount = function componentDidMount() {
-    this.removeEventListener = addEventListener(this.container, 'transitionend', this.onTransitionEnd);
-  };
-  _proto.componentWillReceiveProps = function componentWillReceiveProps(nextProps) {
-    var _this2 = this;
+  _inheritsLoose(CalendarMonthGrid, _Component);
+  CalendarMonthGrid.getDerivedStateFromProps = function getDerivedStateFromProps(nextProps, prevState) {
     var initialMonth = nextProps.initialMonth,
       numberOfMonths = nextProps.numberOfMonths,
       orientation = nextProps.orientation;
-    var months = this.state.months;
-    var _this$props = this.props,
-      prevInitialMonth = _this$props.initialMonth,
-      prevNumberOfMonths = _this$props.numberOfMonths;
-    var hasMonthChanged = !prevInitialMonth.isSame(initialMonth, 'month');
-    var hasNumberOfMonthsChanged = prevNumberOfMonths !== numberOfMonths;
+    var months = prevState.months;
+    var withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
     var newMonths = months;
-    if (hasMonthChanged || hasNumberOfMonthsChanged) {
-      if (hasMonthChanged && !hasNumberOfMonthsChanged) {
-        if (isNextMonth(prevInitialMonth, initialMonth)) {
-          newMonths = months.slice(1);
-          newMonths.push(months[months.length - 1].clone().add(1, 'month'));
-        } else if (isPrevMonth(prevInitialMonth, initialMonth)) {
-          newMonths = months.slice(0, months.length - 1);
-          newMonths.unshift(months[0].clone().subtract(1, 'month'));
-        } else {
-          var withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
-          newMonths = getMonths(initialMonth, numberOfMonths, withoutTransitionMonths);
-        }
+    if (!initialMonth.isSame(prevState.initialMonth, 'month') || numberOfMonths !== prevState.numberOfMonths) {
+      if (isNextMonth(prevState.initialMonth, initialMonth)) {
+        newMonths = months.slice(1);
+        newMonths.push(months[months.length - 1].clone().add(1, 'month'));
+      } else if (isPrevMonth(prevState.initialMonth, initialMonth)) {
+        newMonths = months.slice(0, months.length - 1);
+        newMonths.unshift(months[0].clone().subtract(1, 'month'));
+      } else {
+        newMonths = getMonths(initialMonth, numberOfMonths, withoutTransitionMonths);
       }
-      if (hasNumberOfMonthsChanged) {
-        var _withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
-        newMonths = getMonths(initialMonth, numberOfMonths, _withoutTransitionMonths);
-      }
-      var momentLocale = moment.locale();
-      if (this.locale !== momentLocale) {
-        this.locale = momentLocale;
-        newMonths = newMonths.map(function (m) {
-          return m.locale(_this2.locale);
-        });
-      }
-      this.setState({
-        months: newMonths
+    }
+    if (moment.locale() !== prevState.locale) {
+      newMonths = newMonths.map(function (m) {
+        return m.locale(moment.locale());
       });
     }
+    return {
+      months: newMonths,
+      initialMonth: initialMonth,
+      numberOfMonths: numberOfMonths,
+      locale: moment.locale()
+    };
   };
-  _proto.componentDidUpdate = function componentDidUpdate() {
-    var _this$props2 = this.props,
-      isAnimating = _this$props2.isAnimating,
-      transitionDuration = _this$props2.transitionDuration,
-      onMonthTransitionEnd = _this$props2.onMonthTransitionEnd;
-
-    // For IE9, immediately call onMonthTransitionEnd instead of
-    // waiting for the animation to complete. Similarly, if transitionDuration
-    // is set to 0, also immediately invoke the onMonthTransitionEnd callback
+  var _proto = CalendarMonthGrid.prototype;
+  _proto.componentDidMount = function componentDidMount() {
+    this.removeEventListener = addEventListener(this.container, 'transitionend', this.onTransitionEnd);
+  };
+  _proto.componentDidUpdate = function componentDidUpdate(prevProps) {
+    var _this$props = this.props,
+      isAnimating = _this$props.isAnimating,
+      transitionDuration = _this$props.transitionDuration,
+      onMonthTransitionEnd = _this$props.onMonthTransitionEnd;
     if ((!this.isTransitionEndSupported || !transitionDuration) && isAnimating) {
       onMonthTransitionEnd();
     }
@@ -191,9 +172,9 @@ var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
   };
   _proto.onMonthSelect = function onMonthSelect(currentMonth, newMonthVal) {
     var newMonth = currentMonth.clone();
-    var _this$props3 = this.props,
-      onMonthChange = _this$props3.onMonthChange,
-      orientation = _this$props3.orientation;
+    var _this$props2 = this.props,
+      onMonthChange = _this$props2.onMonthChange,
+      orientation = _this$props2.orientation;
     var months = this.state.months;
     var withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
     var initialMonthSubtraction = months.indexOf(currentMonth);
@@ -205,9 +186,9 @@ var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
   };
   _proto.onYearSelect = function onYearSelect(currentMonth, newYearVal) {
     var newMonth = currentMonth.clone();
-    var _this$props4 = this.props,
-      onYearChange = _this$props4.onYearChange,
-      orientation = _this$props4.orientation;
+    var _this$props3 = this.props,
+      onYearChange = _this$props3.onYearChange,
+      orientation = _this$props3.orientation;
     var months = this.state.months;
     var withoutTransitionMonths = orientation === VERTICAL_SCROLLABLE;
     var initialMonthSubtraction = months.indexOf(currentMonth);
@@ -221,37 +202,37 @@ var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
     this.container = ref;
   };
   _proto.render = function render() {
-    var _this3 = this;
-    var _this$props5 = this.props,
-      enableOutsideDays = _this$props5.enableOutsideDays,
-      firstVisibleMonthIndex = _this$props5.firstVisibleMonthIndex,
-      horizontalMonthPadding = _this$props5.horizontalMonthPadding,
-      isAnimating = _this$props5.isAnimating,
-      modifiers = _this$props5.modifiers,
-      numberOfMonths = _this$props5.numberOfMonths,
-      monthFormat = _this$props5.monthFormat,
-      orientation = _this$props5.orientation,
-      translationValue = _this$props5.translationValue,
-      daySize = _this$props5.daySize,
-      onDayMouseEnter = _this$props5.onDayMouseEnter,
-      onDayMouseLeave = _this$props5.onDayMouseLeave,
-      onDayClick = _this$props5.onDayClick,
-      renderMonthText = _this$props5.renderMonthText,
-      renderCalendarDay = _this$props5.renderCalendarDay,
-      renderDayContents = _this$props5.renderDayContents,
-      renderMonthElement = _this$props5.renderMonthElement,
-      onMonthTransitionEnd = _this$props5.onMonthTransitionEnd,
-      firstDayOfWeek = _this$props5.firstDayOfWeek,
-      focusedDate = _this$props5.focusedDate,
-      isFocused = _this$props5.isFocused,
-      isRTL = _this$props5.isRTL,
-      css = _this$props5.css,
-      styles = _this$props5.styles,
-      phrases = _this$props5.phrases,
-      dayAriaLabelFormat = _this$props5.dayAriaLabelFormat,
-      transitionDuration = _this$props5.transitionDuration,
-      verticalBorderSpacing = _this$props5.verticalBorderSpacing,
-      setMonthTitleHeight = _this$props5.setMonthTitleHeight;
+    var _this2 = this;
+    var _this$props4 = this.props,
+      enableOutsideDays = _this$props4.enableOutsideDays,
+      firstVisibleMonthIndex = _this$props4.firstVisibleMonthIndex,
+      horizontalMonthPadding = _this$props4.horizontalMonthPadding,
+      isAnimating = _this$props4.isAnimating,
+      modifiers = _this$props4.modifiers,
+      numberOfMonths = _this$props4.numberOfMonths,
+      monthFormat = _this$props4.monthFormat,
+      orientation = _this$props4.orientation,
+      translationValue = _this$props4.translationValue,
+      daySize = _this$props4.daySize,
+      onDayMouseEnter = _this$props4.onDayMouseEnter,
+      onDayMouseLeave = _this$props4.onDayMouseLeave,
+      onDayClick = _this$props4.onDayClick,
+      renderMonthText = _this$props4.renderMonthText,
+      renderCalendarDay = _this$props4.renderCalendarDay,
+      renderDayContents = _this$props4.renderDayContents,
+      renderMonthElement = _this$props4.renderMonthElement,
+      onMonthTransitionEnd = _this$props4.onMonthTransitionEnd,
+      firstDayOfWeek = _this$props4.firstDayOfWeek,
+      focusedDate = _this$props4.focusedDate,
+      isFocused = _this$props4.isFocused,
+      isRTL = _this$props4.isRTL,
+      css = _this$props4.css,
+      styles = _this$props4.styles,
+      phrases = _this$props4.phrases,
+      dayAriaLabelFormat = _this$props4.dayAriaLabelFormat,
+      transitionDuration = _this$props4.transitionDuration,
+      verticalBorderSpacing = _this$props4.verticalBorderSpacing,
+      setMonthTitleHeight = _this$props4.setMonthTitleHeight;
     var months = this.state.months;
     var isVertical = orientation === VERTICAL_ORIENTATION;
     var isVerticalScrollable = orientation === VERTICAL_SCROLLABLE;
@@ -293,8 +274,8 @@ var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
         onDayMouseEnter: onDayMouseEnter,
         onDayMouseLeave: onDayMouseLeave,
         onDayClick: onDayClick,
-        onMonthSelect: _this3.onMonthSelect,
-        onYearSelect: _this3.onYearSelect,
+        onMonthSelect: _this2.onMonthSelect,
+        onYearSelect: _this2.onYearSelect,
         renderMonthText: renderMonthText,
         renderCalendarDay: renderCalendarDay,
         renderDayContents: renderDayContents,
@@ -312,14 +293,14 @@ var CalendarMonthGrid = /*#__PURE__*/function (_ref2, _ref) {
     }));
   };
   return CalendarMonthGrid;
-}(React.PureComponent || React.Component, !React.PureComponent && "shouldComponentUpdate");
+}(Component);
 CalendarMonthGrid.propTypes = process.env.NODE_ENV !== "production" ? propTypes : {};
 CalendarMonthGrid.defaultProps = defaultProps;
-export default withStyles(function (_ref3) {
-  var _ref3$reactDates = _ref3.reactDates,
-    color = _ref3$reactDates.color,
-    spacing = _ref3$reactDates.spacing,
-    zIndex = _ref3$reactDates.zIndex;
+export default withStyles(function (_ref) {
+  var _ref$reactDates = _ref.reactDates,
+    color = _ref$reactDates.color,
+    spacing = _ref$reactDates.spacing,
+    zIndex = _ref$reactDates.zIndex;
   return {
     CalendarMonthGrid: {
       background: color.background,

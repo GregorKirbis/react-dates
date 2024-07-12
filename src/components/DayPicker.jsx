@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { forbidExtraProps, mutuallyExclusiveProps, nonNegativeInteger } from 'airbnb-prop-types';
 import { withStyles, withStylesPropTypes } from 'react-with-styles';
-
 import moment from 'moment';
 import throttle from 'lodash/throttle';
 import isTouchDevice from 'is-touch-device';
@@ -11,7 +10,6 @@ import OutsideClickHandler from 'react-outside-click-handler';
 import { DayPickerPhrases } from '../defaultPhrases';
 import getPhrasePropTypes from '../utils/getPhrasePropTypes';
 import noflip from '../utils/noflip';
-
 import CalendarMonthGrid from './CalendarMonthGrid';
 import DayPickerNavigation from './DayPickerNavigation';
 import DayPickerKeyboardShortcuts, {
@@ -57,8 +55,6 @@ const NEXT_NAV = 'next_nav';
 
 const propTypes = forbidExtraProps({
   ...withStylesPropTypes,
-
-  // calendar presentation props
   enableOutsideDays: PropTypes.bool,
   numberOfMonths: PropTypes.number,
   orientation: ScrollableOrientationShape,
@@ -79,8 +75,6 @@ const propTypes = forbidExtraProps({
   horizontalMonthPadding: nonNegativeInteger,
   renderKeyboardShortcutsButton: PropTypes.func,
   renderKeyboardShortcutsPanel: PropTypes.func,
-
-  // navigation props
   dayPickerNavigationInlineStyles: PropTypes.object,
   disablePrev: PropTypes.bool,
   disableNext: PropTypes.bool,
@@ -96,31 +90,23 @@ const propTypes = forbidExtraProps({
   onNextMonthClick: PropTypes.func,
   onMonthChange: PropTypes.func,
   onYearChange: PropTypes.func,
-  onGetNextScrollableMonths: PropTypes.func, // VERTICAL_SCROLLABLE daypickers only
-  onGetPrevScrollableMonths: PropTypes.func, // VERTICAL_SCROLLABLE daypickers only
-
-  // month props
+  onGetNextScrollableMonths: PropTypes.func,
+  onGetPrevScrollableMonths: PropTypes.func,
   renderMonthText: mutuallyExclusiveProps(PropTypes.func, 'renderMonthText', 'renderMonthElement'),
   renderMonthElement: mutuallyExclusiveProps(PropTypes.func, 'renderMonthText', 'renderMonthElement'),
   renderWeekHeaderElement: PropTypes.func,
-
-  // day props
   modifiers: PropTypes.objectOf(PropTypes.objectOf(ModifiersShape)),
   renderCalendarDay: PropTypes.func,
   renderDayContents: PropTypes.func,
   onDayClick: PropTypes.func,
   onDayMouseEnter: PropTypes.func,
   onDayMouseLeave: PropTypes.func,
-
-  // accessibility props
   isFocused: PropTypes.bool,
   getFirstFocusableDay: PropTypes.func,
   onBlur: PropTypes.func,
   showKeyboardShortcuts: PropTypes.bool,
   onTab: PropTypes.func,
   onShiftTab: PropTypes.func,
-
-  // internationalization
   monthFormat: PropTypes.string,
   weekDayFormat: PropTypes.string,
   phrases: PropTypes.shape(getPhrasePropTypes(DayPickerPhrases)),
@@ -128,7 +114,6 @@ const propTypes = forbidExtraProps({
 });
 
 export const defaultProps = {
-  // calendar presentation props
   enableOutsideDays: false,
   numberOfMonths: 2,
   orientation: HORIZONTAL_ORIENTATION,
@@ -149,8 +134,6 @@ export const defaultProps = {
   horizontalMonthPadding: 13,
   renderKeyboardShortcutsButton: undefined,
   renderKeyboardShortcutsPanel: undefined,
-
-  // navigation props
   dayPickerNavigationInlineStyles: null,
   disablePrev: false,
   disableNext: false,
@@ -168,29 +151,21 @@ export const defaultProps = {
   onYearChange() {},
   onGetNextScrollableMonths() {},
   onGetPrevScrollableMonths() {},
-
-  // month props
   renderMonthText: null,
   renderMonthElement: null,
   renderWeekHeaderElement: null,
-
-  // day props
   modifiers: {},
   renderCalendarDay: undefined,
   renderDayContents: null,
   onDayClick() {},
   onDayMouseEnter() {},
   onDayMouseLeave() {},
-
-  // accessibility props
   isFocused: false,
   getFirstFocusableDay: null,
   onBlur() {},
   showKeyboardShortcuts: false,
   onTab() {},
   onShiftTab() {},
-
-  // internationalization
   monthFormat: 'MMMM YYYY',
   weekDayFormat: 'dd',
   phrases: DayPickerPhrases,
@@ -261,6 +236,76 @@ class DayPicker extends React.PureComponent {
     this.setMonthTitleHeight = this.setMonthTitleHeight.bind(this);
   }
 
+  static getDerivedStateFromProps(nextProps, prevState) {
+    const {
+      hidden,
+      isFocused,
+      showKeyboardShortcuts,
+      onBlur,
+      orientation,
+      renderMonthText,
+      horizontalMonthPadding,
+      initialVisibleMonth,
+      daySize,
+    } = nextProps;
+
+    const newState = {};
+
+    if (!hidden) {
+      if (!prevState.hasSetInitialVisibleMonth) {
+        newState.currentMonth = initialVisibleMonth();
+        newState.hasSetInitialVisibleMonth = true;
+      } else {
+        const { numberOfMonths } = nextProps;
+        const newDate = initialVisibleMonth();
+        if (!isDayVisible(newDate, prevState.currentMonth, numberOfMonths)) {
+          newState.currentMonth = newDate;
+        }
+      }
+    }
+
+    if (daySize !== nextProps.daySize) {
+      newState.calendarMonthWidth = getCalendarMonthWidth(
+        nextProps.daySize,
+        horizontalMonthPadding,
+      );
+    }
+
+    if (isFocused !== prevState.isFocused) {
+      if (isFocused) {
+        const focusedDate = this.getFocusedDay(prevState.currentMonth);
+
+        let { onKeyboardShortcutsPanelClose } = prevState;
+        if (showKeyboardShortcuts) {
+          onKeyboardShortcutsPanelClose = onBlur;
+        }
+
+        newState.showKeyboardShortcuts = showKeyboardShortcuts;
+        newState.onKeyboardShortcutsPanelClose = onKeyboardShortcutsPanelClose;
+        newState.focusedDate = focusedDate;
+        newState.withMouseInteractions = false;
+      } else {
+        newState.focusedDate = null;
+      }
+    }
+
+    if (renderMonthText !== null && nextProps.renderMonthText !== null
+        && renderMonthText(prevState.currentMonth) !== nextProps.renderMonthText(prevState.currentMonth)) {
+      newState.monthTitleHeight = null;
+    }
+
+    if (
+      orientation === VERTICAL_SCROLLABLE
+      && this.transitionContainer
+      && !isSameMonth(prevState.currentMonth, nextState.currentMonth)
+    ) {
+      newState.currentMonthScrollTop =
+        this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop;
+    }
+
+    return newState;
+  }
+
   componentDidMount() {
     const { orientation } = this.props;
     const { currentMonth } = this.state;
@@ -281,61 +326,57 @@ class DayPicker extends React.PureComponent {
     this.setCalendarMonthWeeks(currentMonth);
   }
 
-  componentWillReceiveProps(nextProps, nextState) {
+  componentDidUpdate(prevProps, prevState) {
     const {
-      hidden,
-      isFocused,
-      showKeyboardShortcuts,
-      onBlur,
       orientation,
+      daySize,
+      isFocused,
+      numberOfMonths,
+      hidden,
       renderMonthText,
       horizontalMonthPadding,
-    } = nextProps;
-    const { currentMonth } = this.state;
-    const { currentMonth: nextCurrentMonth } = nextState;
+    } = this.props;
+    const {
+      currentMonth,
+      currentMonthScrollTop,
+      focusedDate,
+      monthTitleHeight,
+    } = this.state;
 
     if (!hidden) {
-      if (!this.hasSetInitialVisibleMonth) {
-        this.hasSetInitialVisibleMonth = true;
+      if (!prevState.hasSetInitialVisibleMonth) {
         this.setState({
-          currentMonth: nextProps.initialVisibleMonth(),
+          currentMonth: this.props.initialVisibleMonth(),
+          hasSetInitialVisibleMonth: true,
         });
       } else {
-        const { numberOfMonths } = this.props;
-        const newDate = nextProps.initialVisibleMonth();
+        const newDate = this.props.initialVisibleMonth();
         if (!isDayVisible(newDate, currentMonth, numberOfMonths)) {
           this.onMonthChange(newDate);
         }
       }
     }
 
-    const {
-      daySize,
-      isFocused: prevIsFocused,
-      renderMonthText: prevRenderMonthText,
-    } = this.props;
-
-    if (nextProps.daySize !== daySize) {
+    if (this.props.daySize !== prevProps.daySize) {
       this.setState({
         calendarMonthWidth: getCalendarMonthWidth(
-          nextProps.daySize,
+          this.props.daySize,
           horizontalMonthPadding,
         ),
       });
     }
 
-    if (isFocused !== prevIsFocused) {
+    if (isFocused !== prevProps.isFocused) {
       if (isFocused) {
         const focusedDate = this.getFocusedDay(currentMonth);
 
         let { onKeyboardShortcutsPanelClose } = this.state;
-        if (nextProps.showKeyboardShortcuts) {
-          // the ? shortcut came from the input and we should return input there once it is close
-          onKeyboardShortcutsPanelClose = onBlur;
+        if (this.props.showKeyboardShortcuts) {
+          onKeyboardShortcutsPanelClose = this.props.onBlur;
         }
 
         this.setState({
-          showKeyboardShortcuts,
+          showKeyboardShortcuts: this.props.showKeyboardShortcuts,
           onKeyboardShortcutsPanelClose,
           focusedDate,
           withMouseInteractions: false,
@@ -345,57 +386,12 @@ class DayPicker extends React.PureComponent {
       }
     }
 
-    if (renderMonthText !== null && prevRenderMonthText !== null
-        && renderMonthText(currentMonth) !== prevRenderMonthText(currentMonth)) {
+    if (renderMonthText !== null && prevProps.renderMonthText !== null
+        && renderMonthText(currentMonth) !== prevProps.renderMonthText(currentMonth)) {
       this.setState({
         monthTitleHeight: null,
       });
     }
-
-    // Capture the scroll position so when previous months are rendered above the current month
-    // we can adjust scroll after the component has updated and the previous current month
-    // stays in view.
-    if (
-      orientation === VERTICAL_SCROLLABLE
-      && this.transitionContainer
-      && !isSameMonth(currentMonth, nextCurrentMonth)
-    ) {
-      this.setState({
-        currentMonthScrollTop:
-          this.transitionContainer.scrollHeight - this.transitionContainer.scrollTop,
-      });
-    }
-  }
-
-  componentWillUpdate() {
-    const { transitionDuration } = this.props;
-
-    // Calculating the dimensions trigger a DOM repaint which
-    // breaks the CSS transition.
-    // The setTimeout will wait until the transition ends.
-    if (this.calendarInfo) {
-      this.setCalendarInfoWidthTimeout = setTimeout(() => {
-        const { calendarInfoWidth } = this.state;
-        const calendarInfoPanelWidth = calculateDimension(this.calendarInfo, 'width', true, true);
-        if (calendarInfoWidth !== calendarInfoPanelWidth) {
-          this.setState({
-            calendarInfoWidth: calendarInfoPanelWidth,
-          });
-        }
-      }, transitionDuration);
-    }
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const {
-      orientation, daySize, isFocused, numberOfMonths,
-    } = this.props;
-    const {
-      currentMonth,
-      currentMonthScrollTop,
-      focusedDate,
-      monthTitleHeight,
-    } = this.state;
 
     let shouldAdjustHeight = false;
     if (numberOfMonths !== prevProps.numberOfMonths) {

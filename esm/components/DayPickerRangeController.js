@@ -292,32 +292,32 @@ var DayPickerRangeController = /*#__PURE__*/function (_ref2, _ref) {
   _proto[_ref] = function (nextProps, nextState) {
     return !shallowEqual(this.props, nextProps) || !shallowEqual(this.state, nextState);
   };
-  _proto.componentWillReceiveProps = function componentWillReceiveProps(nextProps) {
+  _proto.componentDidUpdate = function componentDidUpdate(prevProps) {
     var _this2 = this;
-    var startDate = nextProps.startDate,
-      endDate = nextProps.endDate,
-      focusedInput = nextProps.focusedInput,
-      getMinNightsForHoverDate = nextProps.getMinNightsForHoverDate,
-      minimumNights = nextProps.minimumNights,
-      isOutsideRange = nextProps.isOutsideRange,
-      isDayBlocked = nextProps.isDayBlocked,
-      isDayHighlighted = nextProps.isDayHighlighted,
-      phrases = nextProps.phrases,
-      initialVisibleMonth = nextProps.initialVisibleMonth,
-      numberOfMonths = nextProps.numberOfMonths,
-      enableOutsideDays = nextProps.enableOutsideDays;
     var _this$props = this.props,
-      prevStartDate = _this$props.startDate,
-      prevEndDate = _this$props.endDate,
-      prevFocusedInput = _this$props.focusedInput,
-      prevMinimumNights = _this$props.minimumNights,
-      prevIsOutsideRange = _this$props.isOutsideRange,
-      prevIsDayBlocked = _this$props.isDayBlocked,
-      prevIsDayHighlighted = _this$props.isDayHighlighted,
-      prevPhrases = _this$props.phrases,
-      prevInitialVisibleMonth = _this$props.initialVisibleMonth,
-      prevNumberOfMonths = _this$props.numberOfMonths,
-      prevEnableOutsideDays = _this$props.enableOutsideDays;
+      startDate = _this$props.startDate,
+      endDate = _this$props.endDate,
+      focusedInput = _this$props.focusedInput,
+      getMinNightsForHoverDate = _this$props.getMinNightsForHoverDate,
+      minimumNights = _this$props.minimumNights,
+      isOutsideRange = _this$props.isOutsideRange,
+      isDayBlocked = _this$props.isDayBlocked,
+      isDayHighlighted = _this$props.isDayHighlighted,
+      phrases = _this$props.phrases,
+      initialVisibleMonth = _this$props.initialVisibleMonth,
+      numberOfMonths = _this$props.numberOfMonths,
+      enableOutsideDays = _this$props.enableOutsideDays;
+    var prevStartDate = prevProps.startDate,
+      prevEndDate = prevProps.endDate,
+      prevFocusedInput = prevProps.focusedInput,
+      prevMinimumNights = prevProps.minimumNights,
+      prevIsOutsideRange = prevProps.isOutsideRange,
+      prevIsDayBlocked = prevProps.isDayBlocked,
+      prevIsDayHighlighted = prevProps.isDayHighlighted,
+      prevPhrases = prevProps.phrases,
+      prevInitialVisibleMonth = prevProps.initialVisibleMonth,
+      prevNumberOfMonths = prevProps.numberOfMonths,
+      prevEnableOutsideDays = prevProps.enableOutsideDays;
     var hoverDate = this.state.hoverDate;
     var visibleDays = this.state.visibleDays;
     var recomputeOutsideRange = false;
@@ -346,7 +346,7 @@ var DayPickerRangeController = /*#__PURE__*/function (_ref2, _ref) {
     var didEndDateChange = endDate !== prevEndDate;
     var didFocusChange = focusedInput !== prevFocusedInput;
     if (numberOfMonths !== prevNumberOfMonths || enableOutsideDays !== prevEnableOutsideDays || initialVisibleMonth !== prevInitialVisibleMonth && !prevFocusedInput && didFocusChange) {
-      var newMonthState = this.getStateForNewMonth(nextProps);
+      var newMonthState = this.getStateForNewMonth(this.props);
       var currentMonth = newMonthState.currentMonth;
       visibleDays = newMonthState.visibleDays;
       this.setState({

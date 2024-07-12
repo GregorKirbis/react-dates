@@ -270,7 +270,7 @@ export default class DayPickerRangeController extends React.PureComponent {
     this.getFirstFocusableDay = this.getFirstFocusableDay.bind(this);
   }
 
-  componentWillReceiveProps(nextProps) {
+  componentDidUpdate(prevProps) {
     const {
       startDate,
       endDate,
@@ -284,7 +284,7 @@ export default class DayPickerRangeController extends React.PureComponent {
       initialVisibleMonth,
       numberOfMonths,
       enableOutsideDays,
-    } = nextProps;
+    } = this.props;
 
     const {
       startDate: prevStartDate,
@@ -298,7 +298,7 @@ export default class DayPickerRangeController extends React.PureComponent {
       initialVisibleMonth: prevInitialVisibleMonth,
       numberOfMonths: prevNumberOfMonths,
       enableOutsideDays: prevEnableOutsideDays,
-    } = this.props;
+    } = prevProps;
 
     const { hoverDate } = this.state;
     let { visibleDays } = this.state;
@@ -339,7 +339,7 @@ export default class DayPickerRangeController extends React.PureComponent {
         && didFocusChange
       )
     ) {
-      const newMonthState = this.getStateForNewMonth(nextProps);
+      const newMonthState = this.getStateForNewMonth(this.props);
       const { currentMonth } = newMonthState;
       ({ visibleDays } = newMonthState);
       this.setState({

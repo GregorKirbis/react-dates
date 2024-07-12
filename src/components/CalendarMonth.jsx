@@ -105,30 +105,33 @@ class CalendarMonth extends React.PureComponent {
     this.setMonthTitleHeight = this.setMonthTitleHeight.bind(this);
   }
 
-  componentDidMount() {
-    this.queueSetMonthTitleHeight();
-  }
-
-  componentWillReceiveProps(nextProps) {
+  static getDerivedStateFromProps(nextProps, prevState) {
     const { month, enableOutsideDays, firstDayOfWeek } = nextProps;
     const {
       month: prevMonth,
       enableOutsideDays: prevEnableOutsideDays,
       firstDayOfWeek: prevFirstDayOfWeek,
-    } = this.props;
+    } = prevState;
+
     if (
       !month.isSame(prevMonth)
       || enableOutsideDays !== prevEnableOutsideDays
       || firstDayOfWeek !== prevFirstDayOfWeek
     ) {
-      this.setState({
+      return {
         weeks: getCalendarMonthWeeks(
           month,
           enableOutsideDays,
           firstDayOfWeek == null ? moment.localeData().firstDayOfWeek() : firstDayOfWeek,
         ),
-      });
+      };
     }
+
+    return null;
+  }
+
+  componentDidMount() {
+    this.queueSetMonthTitleHeight();
   }
 
   componentDidUpdate(prevProps) {

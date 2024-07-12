@@ -20,6 +20,7 @@ const DatePicker = () => {
           setEndDate(endDate);
         }}
         focusedInput={focusedInput}
+        hideKeyboardShortcutsPanel ={true}
         onFocusChange={focusedInput => setFocusedInput(focusedInput)}
         numberOfMonths={1}
         isOutsideRange={() => false}
