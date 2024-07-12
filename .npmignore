@@ -46,5 +46,3 @@ stories
 test
 test-build
 css
-!lib/css
-!lib
