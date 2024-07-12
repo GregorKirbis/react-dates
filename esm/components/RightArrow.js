@@ -1,13 +1,8 @@
+import _objectDestructuringEmpty from "@babel/runtime/helpers/esm/objectDestructuringEmpty";
 import _extends from "@babel/runtime/helpers/esm/extends";
-import _objectWithoutProperties from "@babel/runtime/helpers/esm/objectWithoutProperties";
-var _excluded = ["size", "color"];
 import React from 'react';
 var RightArrow = function RightArrow(_ref) {
-  var _ref$size = _ref.size,
-    size = _ref$size === void 0 ? 24 : _ref$size,
-    _ref$color = _ref.color,
-    color = _ref$color === void 0 ? 'black' : _ref$color,
-    props = _objectWithoutProperties(_ref, _excluded);
+  var props = _extends({}, (_objectDestructuringEmpty(_ref), _ref));
   return /*#__PURE__*/React.createElement("svg", _extends({
     focusable: "false",
     viewBox: "0 0 1000 1000",
