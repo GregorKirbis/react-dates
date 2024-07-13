@@ -1,0 +1,426 @@
+import React, { Component } from 'react';
+import PropTypes from 'prop-types';
+import { forbidExtraProps } from 'airbnb-prop-types';
+import { withStyles, withStylesPropTypes } from 'react-with-styles';
+
+import { DayPickerKeyboardShortcutsPhrases } from '../defaultPhrases';
+import getPhrasePropTypes from '../utils/getPhrasePropTypes';
+
+import KeyboardShortcutRow from './KeyboardShortcutRow';
+import CloseButton from './CloseButton';
+
+export const TOP_LEFT = 'top-left';
+export const TOP_RIGHT = 'top-right';
+export const BOTTOM_RIGHT = 'bottom-right';
+
+const propTypes = forbidExtraProps({
+  ...withStylesPropTypes,
+  block: PropTypes.bool,
+  buttonLocation: PropTypes.oneOf([TOP_LEFT, TOP_RIGHT, BOTTOM_RIGHT]),
+  showKeyboardShortcutsPanel: PropTypes.bool,
+  openKeyboardShortcutsPanel: PropTypes.func,
+  closeKeyboardShortcutsPanel: PropTypes.func,
+  phrases: PropTypes.shape(getPhrasePropTypes(DayPickerKeyboardShortcutsPhrases)),
+  renderKeyboardShortcutsButton: PropTypes.func,
+  renderKeyboardShortcutsPanel: PropTypes.func,
+});
+
+const defaultProps = {
+  block: false,
+  buttonLocation: BOTTOM_RIGHT,
+  showKeyboardShortcutsPanel: false,
+  openKeyboardShortcutsPanel() {},
+  closeKeyboardShortcutsPanel() {},
+  phrases: DayPickerKeyboardShortcutsPhrases,
+  renderKeyboardShortcutsButton: undefined,
+  renderKeyboardShortcutsPanel: undefined,
+};
+
+function getKeyboardShortcuts(phrases) {
+  return [
+    {
+      unicode: '↵',
+      label: phrases.enterKey,
+      action: phrases.selectFocusedDate,
+    },
+    {
+      unicode: '←/→',
+      label: phrases.leftArrowRightArrow,
+      action: phrases.moveFocusByOneDay,
+    },
+    {
+      unicode: '↑/↓',
+      label: phrases.upArrowDownArrow,
+      action: phrases.moveFocusByOneWeek,
+    },
+    {
+      unicode: 'PgUp/PgDn',
+      label: phrases.pageUpPageDown,
+      action: phrases.moveFocusByOneMonth,
+    },
+    {
+      unicode: 'Home/End',
+      label: phrases.homeEnd,
+      action: phrases.moveFocustoStartAndEndOfWeek,
+    },
+    {
+      unicode: 'Esc',
+      label: phrases.escape,
+      action: phrases.returnFocusToInput,
+    },
+    {
+      unicode: '?',
+      label: phrases.questionMark,
+      action: phrases.openThisPanel,
+    },
+  ];
+}
+
+class DayPickerKeyboardShortcuts extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      keyboardShortcuts: getKeyboardShortcuts(props.phrases),
+    };
+
+    this.onShowKeyboardShortcutsButtonClick = this.onShowKeyboardShortcutsButtonClick.bind(this);
+    this.setShowKeyboardShortcutsButtonRef = this.setShowKeyboardShortcutsButtonRef.bind(this);
+    this.setHideKeyboardShortcutsButtonRef = this.setHideKeyboardShortcutsButtonRef.bind(this);
+    this.handleFocus = this.handleFocus.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
+  }
+
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (nextProps.phrases !== prevState.phrases) {
+      return {
+        keyboardShortcuts: getKeyboardShortcuts(nextProps.phrases),
+      };
+    }
+    return null;
+  }
+
+  componentDidUpdate() {
+    this.handleFocus();
+  }
+
+  handleFocus() {
+    if (this.hideKeyboardShortcutsButton) {
+      this.hideKeyboardShortcutsButton.focus();
+    }
+  }
+
+  onKeyDown(e) {
+    e.stopPropagation();
+
+    const { closeKeyboardShortcutsPanel } = this.props;
+    switch (e.key) {
+      case 'Escape':
+        closeKeyboardShortcutsPanel();
+        break;
+
+      case 'ArrowUp':
+      case 'ArrowDown':
+        break;
+
+      case 'Tab':
+      case 'Home':
+      case 'End':
+      case 'PageUp':
+      case 'PageDown':
+      case 'ArrowLeft':
+      case 'ArrowRight':
+        e.preventDefault();
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  onShowKeyboardShortcutsButtonClick() {
+    const { openKeyboardShortcutsPanel } = this.props;
+    openKeyboardShortcutsPanel(() => { this.showKeyboardShortcutsButton.focus(); });
+  }
+
+  setShowKeyboardShortcutsButtonRef(ref) {
+    this.showKeyboardShortcutsButton = ref;
+  }
+
+  setHideKeyboardShortcutsButtonRef(ref) {
+    this.hideKeyboardShortcutsButton = ref;
+  }
+
+  render() {
+    const {
+      block,
+      buttonLocation,
+      showKeyboardShortcutsPanel,
+      closeKeyboardShortcutsPanel,
+      css,
+      styles,
+      phrases,
+      renderKeyboardShortcutsButton,
+      renderKeyboardShortcutsPanel,
+    } = this.props;
+
+    const toggleButtonText = showKeyboardShortcutsPanel
+      ? phrases.hideKeyboardShortcutsPanel
+      : phrases.showKeyboardShortcutsPanel;
+
+    const bottomRight = buttonLocation === BOTTOM_RIGHT;
+    const topRight = buttonLocation === TOP_RIGHT;
+    const topLeft = buttonLocation === TOP_LEFT;
+
+    return (
+      <div>
+        {renderKeyboardShortcutsButton
+          && renderKeyboardShortcutsButton({
+            ref: this.setShowKeyboardShortcutsButtonRef,
+            onClick: this.onShowKeyboardShortcutsButtonClick,
+            ariaLabel: toggleButtonText,
+          })}
+        {!renderKeyboardShortcutsButton && (
+          <button
+            ref={this.setShowKeyboardShortcutsButtonRef}
+            {...css(
+              styles.DayPickerKeyboardShortcuts_buttonReset,
+              styles.DayPickerKeyboardShortcuts_show,
+              bottomRight && styles.DayPickerKeyboardShortcuts_show__bottomRight,
+              topRight && styles.DayPickerKeyboardShortcuts_show__topRight,
+              topLeft && styles.DayPickerKeyboardShortcuts_show__topLeft,
+            )}
+            type="button"
+            aria-label={toggleButtonText}
+            onClick={this.onShowKeyboardShortcutsButtonClick}
+            onMouseUp={(e) => {
+              e.currentTarget.blur();
+            }}
+          >
+            <span
+              {...css(
+                styles.DayPickerKeyboardShortcuts_showSpan,
+                bottomRight && styles.DayPickerKeyboardShortcuts_showSpan__bottomRight,
+                topRight && styles.DayPickerKeyboardShortcuts_showSpan__topRight,
+                topLeft && styles.DayPickerKeyboardShortcuts_showSpan__topLeft,
+              )}
+            >
+              ?
+            </span>
+          </button>
+        )}
+        {showKeyboardShortcutsPanel && (
+          renderKeyboardShortcutsPanel ? (
+            renderKeyboardShortcutsPanel({
+              closeButtonAriaLabel: phrases.hideKeyboardShortcutsPanel,
+              keyboardShortcuts: this.state.keyboardShortcuts,
+              onCloseButtonClick: closeKeyboardShortcutsPanel,
+              onKeyDown: this.onKeyDown,
+              title: phrases.keyboardShortcuts,
+            })
+          ) : (
+            <div
+              {...css(styles.DayPickerKeyboardShortcuts_panel)}
+              role="dialog"
+              aria-labelledby="DayPickerKeyboardShortcuts_title"
+              aria-describedby="DayPickerKeyboardShortcuts_description"
+            >
+              <div
+                {...css(styles.DayPickerKeyboardShortcuts_title)}
+                id="DayPickerKeyboardShortcuts_title"
+              >
+                {phrases.keyboardShortcuts}
+              </div>
+
+              <button
+                ref={this.setHideKeyboardShortcutsButtonRef}
+                {...css(
+                  styles.DayPickerKeyboardShortcuts_buttonReset,
+                  styles.DayPickerKeyboardShortcuts_close,
+                )}
+                type="button"
+                tabIndex="0"
+                aria-label={phrases.hideKeyboardShortcutsPanel}
+                onClick={closeKeyboardShortcutsPanel}
+                onKeyDown={this.onKeyDown}
+              >
+                <CloseButton {...css(styles.DayPickerKeyboardShortcuts_closeSvg)} />
+              </button>
+
+              <ul
+                {...css(styles.DayPickerKeyboardShortcuts_list)}
+                id="DayPickerKeyboardShortcuts_description"
+              >
+                {this.state.keyboardShortcuts.map(({ unicode, label, action }) => (
+                  <KeyboardShortcutRow
+                    key={label}
+                    unicode={unicode}
+                    label={label}
+                    action={action}
+                    block={block}
+                  />
+                ))}
+              </ul>
+            </div>
+          )
+        )}
+      </div>
+    );
+  }
+}
+
+DayPickerKeyboardShortcuts.propTypes = propTypes;
+DayPickerKeyboardShortcuts.defaultProps = defaultProps;
+
+export default withStyles(({ reactDates: { color, font, zIndex } }) => ({
+  DayPickerKeyboardShortcuts_buttonReset: {
+    background: 'none',
+    border: 0,
+    borderRadius: 0,
+    color: 'inherit',
+    font: 'inherit',
+    lineHeight: 'normal',
+    overflow: 'visible',
+    padding: 0,
+    cursor: 'pointer',
+    fontSize: font.size,
+
+    ':active': {
+      outline: 'none',
+    },
+  },
+
+  DayPickerKeyboardShortcuts_show: {
+    width: 33,
+    height: 26,
+    position: 'absolute',
+    zIndex: zIndex + 2,
+
+    '::before': {
+      content: '""',
+      display: 'block',
+      position: 'absolute',
+    },
+  },
+
+  DayPickerKeyboardShortcuts_show__bottomRight: {
+    bottom: 0,
+    right: 0,
+
+    '::before': {
+      borderTop: '26px solid transparent',
+      borderRight: `33px solid ${color.core.primary}`,
+      bottom: 0,
+      right: 0,
+    },
+
+    ':hover::before': {
+      borderRight: `33px solid ${color.core.primary_dark}`,
+    },
+  },
+
+  DayPickerKeyboardShortcuts_show__topRight: {
+    top: 0,
+    right: 0,
+
+    '::before': {
+      borderBottom: '26px solid transparent',
+      borderRight: `33px solid ${color.core.primary}`,
+      top: 0,
+      right: 0,
+    },
+
+    ':hover::before': {
+      borderRight: `33px solid ${color.core.primary_dark}`,
+    },
+  },
+
+  DayPickerKeyboardShortcuts_show__topLeft: {
+    top: 0,
+    left: 0,
+
+    '::before': {
+      borderBottom: '26px solid transparent',
+      borderLeft: `33px solid ${color.core.primary}`,
+      top: 0,
+      left: 0,
+    },
+
+    ':hover::before': {
+      borderLeft: `33px solid ${color.core.primary_dark}`,
+    },
+  },
+
+  DayPickerKeyboardShortcuts_showSpan: {
+    color: color.core.white,
+    position: 'absolute',
+  },
+
+  DayPickerKeyboardShortcuts_showSpan__bottomRight: {
+    bottom: 0,
+    right: 5,
+  },
+
+  DayPickerKeyboardShortcuts_showSpan__topRight: {
+    top: 1,
+    right: 5,
+  },
+
+  DayPickerKeyboardShortcuts_showSpan__topLeft: {
+    top: 1,
+    left: 5,
+  },
+
+  DayPickerKeyboardShortcuts_panel: {
+    overflow: 'auto',
+    background: color.background,
+    border: `1px solid ${color.core.border}`,
+    borderRadius: 2,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    left: 0,
+    zIndex: zIndex + 2,
+    padding: 22,
+    margin: 33,
+    textAlign: 'left',
+  },
+
+  DayPickerKeyboardShortcuts_title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    margin: 0,
+  },
+
+  DayPickerKeyboardShortcuts_list: {
+    listStyle: 'none',
+    padding: 0,
+    fontSize: font.size,
+  },
+
+  DayPickerKeyboardShortcuts_close: {
+    position: 'absolute',
+    right: 22,
+    top: 22,
+    zIndex: zIndex + 2,
+
+    ':active': {
+      outline: 'none',
+    },
+  },
+
+  DayPickerKeyboardShortcuts_closeSvg: {
+    height: 15,
+    width: 15,
+    fill: color.core.grayLighter,
+
+    ':hover': {
+      fill: color.core.grayLight,
+    },
+
+    ':focus': {
+      fill: color.core.grayLight,
+    },
+  },
+}), { pureComponent: typeof React.PureComponent !== 'undefined' })(DayPickerKeyboardShortcuts);
