@@ -236,6 +236,22 @@ class DayPicker extends React.PureComponent {
     this.setMonthTitleHeight = this.setMonthTitleHeight.bind(this);
   }
 
+   // Make sure the method is inside the class
+   static getFocusedDay(currentMonth, props) {
+    const { getFirstFocusableDay, numberOfMonths } = props;
+
+    let focusedDate;
+    if (getFirstFocusableDay) {
+      focusedDate = getFirstFocusableDay(currentMonth);
+    }
+
+    if (!focusedDate || !isDayVisible(focusedDate, currentMonth, numberOfMonths)) {
+      focusedDate = currentMonth.clone().startOf('month').hour(12);
+    }
+
+    return focusedDate;
+  }
+
   static getDerivedStateFromProps(nextProps, prevState) {
     const {
       hidden,
@@ -273,7 +289,7 @@ class DayPicker extends React.PureComponent {
 
     if (isFocused !== prevState.isFocused) {
       if (isFocused) {
-        const focusedDate = this.getFocusedDay(prevState.currentMonth);
+        const focusedDate = DayPicker.getFocusedDay(prevState.currentMonth, nextProps);
 
         let { onKeyboardShortcutsPanelClose } = prevState;
         if (showKeyboardShortcuts) {
@@ -368,7 +384,7 @@ class DayPicker extends React.PureComponent {
 
     if (isFocused !== prevProps.isFocused) {
       if (isFocused) {
-        const focusedDate = this.getFocusedDay(currentMonth);
+        const focusedDate = DayPicker.getFocusedDay(currentMonth, this.props);//his.getFocusedDay(currentMonth);
 
         let { onKeyboardShortcutsPanelClose } = this.state;
         if (this.props.showKeyboardShortcuts) {
@@ -690,20 +706,6 @@ class DayPicker extends React.PureComponent {
     return firstVisibleMonthIndex;
   }
 
-  getFocusedDay(newMonth) {
-    const { getFirstFocusableDay, numberOfMonths } = this.props;
-
-    let focusedDate;
-    if (getFirstFocusableDay) {
-      focusedDate = getFirstFocusableDay(newMonth);
-    }
-
-    if (newMonth && (!focusedDate || !isDayVisible(focusedDate, newMonth, numberOfMonths))) {
-      focusedDate = newMonth.clone().startOf('month').hour(12);
-    }
-
-    return focusedDate;
-  }
 
   setMonthTitleHeight(monthTitleHeight) {
     this.setState({
@@ -846,7 +848,7 @@ class DayPicker extends React.PureComponent {
     if (nextFocusedDate) {
       newFocusedDate = nextFocusedDate;
     } else if (!focusedDate && !withMouseInteractions) {
-      newFocusedDate = this.getFocusedDay(newMonth);
+      newFocusedDate = DayPicker.getFocusedDay(newMonth, this.nextProps);//this.getFocusedDay(newMonth);
     }
 
     this.setState({
