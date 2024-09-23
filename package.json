@@ -1,6 +1,6 @@
 {
   "name": "react-dates",
-  "version": "21.8.1",
+  "version": "21.8.2",
   "description": "A responsive and accessible date range picker component built with React",
   "main": "index.js",
   "scripts": {
@@ -40,10 +40,10 @@
     "check-only-changelog-changed": "(expr $(git status --porcelain 2>/dev/null| grep -v \"CHANGELOG.md\" | wc -l) >/dev/null && echo 'Only CHANGELOG.md may have uncommitted changes' && exit 1) || exit 0"
   },
   "eslintConfig": {
-  "extends": [
-    "eslint:recommended",
-    "plugin:react/recommended"
-  ]
+    "extends": [
+      "eslint:recommended",
+      "plugin:react/recommended"
+    ]
   },
   "repository": {
     "type": "git",
