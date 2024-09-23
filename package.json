@@ -1,6 +1,6 @@
 {
   "name": "react-dates",
-  "version": "21.8.0",
+  "version": "21.8.1",
   "description": "A responsive and accessible date range picker component built with React",
   "main": "index.js",
   "scripts": {
@@ -120,7 +120,6 @@
     "enzyme-shallow-equal": "^1.0.4",
     "is-touch-device": "^1.0.1",
     "lodash": "^4.1.1",
-    "node-sass": "^9.0.0",
     "object.assign": "^4.1.2",
     "object.values": "^1.1.5",
     "prop-types": "^15.7.2",
@@ -130,7 +129,8 @@
     "react-portal": "^4.2.1",
     "react-with-direction": "^1.4.0",
     "react-with-styles": "~4.1.0",
-    "react-with-styles-interface-css": "^6.0.0"
+    "react-with-styles-interface-css": "^6.0.0",
+    "sass": "^1.79.3"
   },
   "peerDependencies": {
     "@babel/runtime": "^7.0.0",
